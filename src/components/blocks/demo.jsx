@@ -114,12 +114,14 @@ const Process = () => {
 const Work = () => {
     return (
         <div className="container min-h-svh place-content-center bg-black p-6 md:p-12 text-[#F1F1F1] border-y border-white/5">
-            <div className="text-center max-w-3xl mx-auto">
-                <h5 className="text-xs uppercase tracking-widest text-[#00C896]">projetos recentes</h5>
-                <h2 className="mb-4 mt-1 text-4xl md:text-5xl font-['Sora'] font-bold tracking-tight">
+            <div className="flex flex-col items-center justify-center text-center px-4 py-8 md:py-16 gap-3 max-w-3xl mx-auto">
+                <span className="text-[11px] md:text-sm font-mono uppercase tracking-widest text-[#00C896]">
+                    Projetos Recentes
+                </span>
+                <h2 className="text-3xl md:text-5xl font-['Sora'] font-bold text-white leading-tight">
                     Entregas de <span className="text-[#00C896]">autoridade.</span>
                 </h2>
-                <p className="mx-auto max-w-prose text-lg text-[#F1F1F1]/60">
+                <p className="text-sm md:text-base text-[#F1F1F1]/60 max-w-sm md:max-w-xl mx-auto mt-2 leading-relaxed">
                     Da construção imersiva de e-commerces à engenharia avançada de landing pages e plataformas.
                     Criamos interfaces que ditam tendência e comunicam uma percepção real de valor ao mercado.
                 </p>
@@ -143,7 +145,7 @@ const Work = () => {
                                         key={service}
                                         className="flex rounded-full border border-[#00C896]/30 bg-[#00C896]/10 px-3 py-1.5 backdrop-blur-md"
                                     >
-                                        <span className="text-[10px] md:text-xs tracking-wider uppercase text-[#00C896] font-medium">
+                                        <span className="text-[11px] md:text-xs tracking-wide uppercase text-[#00C896] font-medium">
                                             {service}
                                         </span>
                                     </div>
