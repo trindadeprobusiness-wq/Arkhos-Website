@@ -6,6 +6,7 @@ import Card from '../components/ui/Card';
 import AnoAI from '../components/ui/animated-shader-background';
 import { Link } from 'react-router-dom';
 import { Marquee } from '../components/ui/marquee';
+import { Process } from '../components/blocks/demo';
 
 const Home = () => {
     const containerVariants = {
@@ -192,6 +193,9 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Metodologia Process Stack */}
+            <Process />
 
             {/* Proof Points */}
             <section className="py-20 border-y border-white/5 bg-black/20 backdrop-blur-sm">

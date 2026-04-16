@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
+import { Work } from '../components/blocks/demo';
 
 const Portfolio = () => {
     const cases = [
@@ -52,6 +53,9 @@ const Portfolio = () => {
                 </p>
             </section>
 
+            {/* Showcase Interativo de Projetos */}
+            <Work />
+
             <section className="py-10 pb-32 container mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {cases.map((project, index) => (
@@ -80,9 +84,11 @@ const Portfolio = () => {
                 <div className="mt-32 text-center bg-[#1F1F1F]/30 p-12 rounded-2xl border border-white/5">
                     <h2 className="text-3xl font-bold font-['Sora'] mb-4">Viu o que é possível?</h2>
                     <p className="text-[#F1F1F1]/60 mb-8">Vamos falar sobre o seu projeto e desenhar o próximo case de sucesso.</p>
-                    <Link to="/orcamentos">
-                        <Button size="lg">Solicitar Orçamento</Button>
-                    </Link>
+                    <div className="flex justify-center">
+                        <Link to="/orcamentos">
+                            <Button size="lg">Solicitar Orçamento</Button>
+                        </Link>
+                    </div>
                 </div>
             </section>
         </div>
