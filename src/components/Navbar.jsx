@@ -10,9 +10,10 @@ const Navbar = () => {
     const location = useLocation();
 
     const navLinks = [
+        { name: 'Soluções', path: '/portfolio' },
+        { name: 'Cases', path: '/portfolio' },
+        { name: 'Metodologia', path: '/#metodologia' },
         { name: 'Comunidade', path: '/comunidade' },
-        { name: 'Aproveitar Oportunidade', path: '/orcamentos' },
-        { name: 'Portfólio', path: '/portfolio' },
     ];
 
     return (
@@ -46,9 +47,10 @@ const Navbar = () => {
                                 <span className={`absolute -bottom-1 left-0 w-0 h-[1px] bg-[#00C896] transition-all duration-300 group-hover:w-full ${location.pathname === link.path ? 'w-full' : ''}`} />
                             </Link>
                         ))}
-                        <Link to="/orcamentos">
-                            <Button variant="outline" className="px-5 py-2 text-sm">
-                                Aproveitar Oportunidade
+                        <Link to="/orcamentos" className="relative group">
+                            <Button variant="outline" className="px-5 py-2 text-sm flex items-center gap-2">
+                                Agendar Diagnóstico
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#00C896] animate-pulse" />
                             </Button>
                         </Link>
                     </div>
@@ -92,8 +94,9 @@ const Navbar = () => {
                         ))}
 
                         <Link to="/orcamentos" onClick={() => setIsOpen(false)}>
-                            <Button variant="primary" className="mt-4">
-                                Aproveitar Oportunidade
+                            <Button variant="primary" className="mt-4 flex items-center gap-2">
+                                Agendar Diagnóstico
+                                <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
                             </Button>
                         </Link>
                     </motion.div>

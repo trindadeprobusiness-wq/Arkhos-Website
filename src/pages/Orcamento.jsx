@@ -1,114 +1,347 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Check, MessageCircle, ChevronLeft } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Calendar } from 'lucide-react';
 
-// ─── EmailJS config ────────────────────────────────────────────────────────────
-// Para ativar o envio de e-mail, crie uma conta em https://emailjs.com
-// e preencha as 3 constantes abaixo.
-const EMAILJS_SERVICE_ID = 'service_ury7xqb';
-const EMAILJS_TEMPLATE_ID = 'template_64qi42s';
-const EMAILJS_PUBLIC_KEY = 'JcJ3gFHmmpM-YSRFy';
-const RECIPIENT_EMAIL = 'trindadeprobusiness@gmail.com';
-const WHATSAPP_NUMBER = '5511999999999'; // número no formato internacional sem +
+// ─── Configurações ────────────────────────────────────────────────────────────
+const WHATSAPP_NUMBER = '5511999999999';
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-const sendEmail = async (subject, body) => {
-    try {
-        if (
-            EMAILJS_SERVICE_ID === 'YOUR_SERVICE_ID' ||
-            EMAILJS_TEMPLATE_ID === 'YOUR_TEMPLATE_ID' ||
-            EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY'
-        ) {
-            console.log('[EMAIL SIMULADO]', subject, body);
-            return;
-        }
-        const emailjs = await import('https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js');
-        await emailjs.send(
-            EMAILJS_SERVICE_ID,
-            EMAILJS_TEMPLATE_ID,
-            { to_email: RECIPIENT_EMAIL, subject, body },
-            EMAILJS_PUBLIC_KEY
-        );
-    } catch (err) {
-        console.error('Erro ao enviar e-mail:', err);
+// ─── Fluxo do Formulário Inteligente (Decision Tree) ───────────────────────────
+const QUESTIONS = {
+    DADOS_NOME: {
+        id: 'DADOS_NOME',
+        title: "Como podemos te chamar?",
+        subtitle: "VAMOS COMEÇAR!",
+        inputType: "text",
+        placeholder: "Ex: João Silva",
+        key: "nome",
+        next: "DADOS_EMAIL"
+    },
+    DADOS_EMAIL: {
+        id: 'DADOS_EMAIL',
+        title: "Qual é o seu melhor e-mail?",
+        subtitle: "Para enviar o resumo do diagnóstico",
+        inputType: "email",
+        placeholder: "joao@empresa.com.br",
+        key: "email",
+        next: "DADOS_WHATSAPP"
+    },
+    DADOS_WHATSAPP: {
+        id: 'DADOS_WHATSAPP',
+        title: "E o seu WhatsApp?",
+        subtitle: "Para contato rápido (prometemos não fazer spam)",
+        inputType: "tel",
+        placeholder: "(11) 99999-9999",
+        key: "whatsapp",
+        next: "DADOS_EMPRESA"
+    },
+    DADOS_EMPRESA: {
+        id: 'DADOS_EMPRESA',
+        title: "Qual é o nome da sua empresa?",
+        subtitle: "Opcional, mas ajuda no diagnóstico",
+        inputType: "text",
+        placeholder: "Ex: Arkhos Tech",
+        key: "empresa",
+        next: "P1"
+    },
+    P1: {
+        id: 'P1',
+        title: "Qual é o maior desafio do seu negócio hoje?",
+        subtitle: "Antes de qualquer coisa, quero entender o que te trouxe até aqui.",
+        options: [
+            { label: "🌐 Não tenho (ou tenho um site ruim) e preciso de presença online", branch: "A", next: "A_P2" },
+            { label: "⚙️ Minha equipe perde tempo com processos manuais e repetitivos", branch: "B", next: "B_P2" },
+            { label: "📉 Estou perdendo clientes ou não consigo atrair novos", branch: "C", next: "C_P2" },
+            { label: "🖥️ Preciso de um sistema interno para organizar minha operação", branch: "D", next: "D_P2" },
+            { label: "🚀 Quero escalar o negócio, mas a tecnologia não acompanha", branch: "E", next: "E_P2" },
+            { label: "🤔 Não sei exatamente, mas sei que algo precisa mudar", branch: "F", next: "F_P2" }
+        ]
+    },
+
+    // Ramo A: Site
+    A_P2: {
+        id: 'A_P2',
+        title: "Você já tem um site hoje, ou está começando do zero?",
+        options: [
+            { label: "Já tenho um site, mas precisa melhorar", next: "A_P2b" },
+            { label: "Não tenho site, começando do zero", next: "A_P3" }
+        ]
+    },
+    A_P2b: {
+        id: 'A_P2b',
+        title: "O que não funciona no seu site atual?",
+        options: [
+            { label: "Lentidão", next: "A_P3" },
+            { label: "Visual desatualizado", next: "A_P3" },
+            { label: "Não gera contatos", next: "A_P3" },
+            { label: "Não aparece no Google", next: "A_P3" },
+            { label: "Outro", next: "A_P3" }
+        ]
+    },
+    A_P3: {
+        id: 'A_P3',
+        title: "Qual seria o principal objetivo do seu novo site?",
+        options: [
+            { label: "Gerar contatos e leads qualificados", next: "A_P4" },
+            { label: "Ser encontrado no Google (SEO)", next: "A_P4" },
+            { label: "Vender produtos diretamente (e-commerce)", next: "A_P4" },
+            { label: "Credibilidade institucional", next: "A_P4" },
+            { label: "Tudo isso ao mesmo tempo", next: "A_P4" }
+        ]
+    },
+    A_P4: {
+        id: 'A_P4',
+        title: "Você atende clientes B2B (empresas), B2C (consumidores finais) ou os dois?",
+        options: [
+            { label: "B2B (Empresas)", next: "A_P5" },
+            { label: "B2C (Consumidores finais)", next: "A_P5" },
+            { label: "Atendo ambos", next: "A_P5" }
+        ]
+    },
+    A_P5: {
+        id: 'A_P5',
+        title: "Como você conquista clientes hoje — antes de ter um site funcionando perfeitamente?",
+        options: [
+            { label: "WhatsApp e Contatos Pessoais", next: "P6" },
+            { label: "Indicações de clientes atuais", next: "P6" },
+            { label: "Redes sociais (Instagram/LinkedIn)", next: "P6" },
+            { label: "Eventos e feiras", next: "P6" },
+            { label: "Ainda não tenho clientes", next: "P6" },
+            { label: "Outros canais", next: "P6" }
+        ]
+    },
+
+    // Ramo B: Automação
+    B_P2: {
+        id: 'B_P2',
+        title: "Em qual área da sua empresa você sente mais esse gargalo?",
+        options: [
+            { label: "Vendas e Comercial", next: "B_P3" },
+            { label: "Atendimento ao cliente", next: "B_P3" },
+            { label: "Operações e logística", next: "B_P3" },
+            { label: "Financeiro", next: "B_P3" },
+            { label: "RH", next: "B_P3" },
+            { label: "Comunicação interna", next: "B_P3" }
+        ]
+    },
+    B_P3: {
+        id: 'B_P3',
+        title: "Me diz uma coisa: hoje, quantas pessoas da sua equipe ficam presas nesse processo manual?",
+        options: [
+            { label: "Só eu mesmo", next: "B_P4" },
+            { label: "2 a 5 pessoas", next: "B_P4" },
+            { label: "6 a 15 pessoas", next: "B_P4" },
+            { label: "Mais de 15 pessoas", next: "B_P4" }
+        ]
+    },
+    B_P4: {
+        id: 'B_P4',
+        title: "Que ferramenta você usa hoje para gerenciar isso (mesmo que de forma incompleta)?",
+        options: [
+            { label: "Planilha Excel ou Google Sheets", next: "B_P5" },
+            { label: "Apenas WhatsApp", next: "B_P5" },
+            { label: "Papel e caneta", next: "B_P5" },
+            { label: "Sistema antigo que não atende", next: "B_P5" },
+            { label: "Nenhuma ferramenta", next: "B_P5" }
+        ]
+    },
+    B_P5: {
+        id: 'B_P5',
+        title: "Se esse processo fosse automatizado, o que mudaria de verdade no seu negócio?",
+        options: [
+            { label: "Economizaria horas por dia", next: "P6" },
+            { label: "Reduziria erros e retrabalho", next: "P6" },
+            { label: "Conseguiria atender mais clientes", next: "P6" },
+            { label: "Teria dados para tomar decisões", next: "P6" },
+            { label: "Dormiria melhor à noite", next: "P6" }
+        ]
+    },
+
+    // Ramo C: Conversão
+    C_P2: {
+        id: 'C_P2',
+        title: "Onde você sente que está perdendo mais clientes?",
+        options: [
+            { label: "Antes do primeiro contato (ninguém me encontra)", next: "C_P3" },
+            { label: "Na proposta ou orçamento", next: "C_P3" },
+            { label: "No fechamento da venda", next: "C_P3" },
+            { label: "Após a venda (churn/cancelamento)", next: "C_P3" },
+            { label: "Sinto que perco em todos os pontos", next: "C_P3" }
+        ]
+    },
+    C_P3: {
+        id: 'C_P3',
+        title: "Você sabe hoje de onde vêm seus melhores clientes?",
+        options: [
+            { label: "Sim, sei exatamente a origem", next: "C_P4" },
+            { label: "Tenho uma ideia aproximada", next: "C_P4" },
+            { label: "Não faço ideia", next: "C_P4" },
+            { label: "Quase todos vêm de indicação", next: "C_P4" }
+        ]
+    },
+    C_P4: {
+        id: 'C_P4',
+        title: "Qual é o ticket médio do seu serviço ou produto?",
+        options: [
+            { label: "Até R$ 500", next: "C_P5" },
+            { label: "R$ 500 a R$ 2.000", next: "C_P5" },
+            { label: "R$ 2.000 a R$ 10.000", next: "C_P5" },
+            { label: "Acima de R$ 10.000", next: "C_P5" }
+        ]
+    },
+    C_P5: {
+        id: 'C_P5',
+        title: "Você já tem algum funil de vendas estruturado ou está começando do zero?",
+        options: [
+            { label: "Já tenho um funil bem estruturado", next: "P6" },
+            { label: "Tenho processos básicos, mas falta estrutura", next: "P6" },
+            { label: "Estou começando do zero nessa parte", next: "P6" }
+        ]
+    },
+
+    // Ramo D: Sistema
+    D_P2: {
+        id: 'D_P2',
+        title: "Quem vai usar esse sistema no dia a dia?",
+        options: [
+            { label: "Apenas minha equipe interna", next: "D_P3" },
+            { label: "Meus clientes terão acesso", next: "D_P3" },
+            { label: "Parceiros e fornecedores", next: "D_P3" },
+            { label: "Todos esses perfis", next: "D_P3" }
+        ]
+    },
+    D_P3: {
+        id: 'D_P3',
+        title: "Esse sistema precisa se integrar com algo que você já usa?",
+        options: [
+            { label: "ERP (SAP, Totvs, Omie, etc.)", next: "D_P4" },
+            { label: "CRM (Salesforce, HubSpot, etc.)", next: "D_P4" },
+            { label: "Plataforma de E-commerce", next: "D_P4" },
+            { label: "Outras APIs externas", next: "D_P4" },
+            { label: "Não precisa integrar, funcionará isolado", next: "D_P4" }
+        ]
+    },
+    D_P4: {
+        id: 'D_P4',
+        title: "Você tem o processo que esse sistema vai automatizar já desenhado e documentado?",
+        options: [
+            { label: "Sim, está tudo documentado", next: "D_P5" },
+            { label: "Temos uma ideia, mas não está formalizado", next: "D_P5" },
+            { label: "Precisamos mapear e desenhar junto com vocês", next: "D_P5" }
+        ]
+    },
+    D_P5: {
+        id: 'D_P5',
+        title: "Quantas pessoas usariam esse sistema simultaneamente na sua empresa?",
+        options: [
+            { label: "1 a 5 pessoas", next: "P6" },
+            { label: "6 a 20 pessoas", next: "P6" },
+            { label: "21 a 100 pessoas", next: "P6" },
+            { label: "Mais de 100 pessoas", next: "P6" }
+        ]
+    },
+
+    // Ramo E: Escala
+    E_P2: {
+        id: 'E_P2',
+        title: "O que está segurando seu crescimento hoje — no fundo, qual é a raiz do problema?",
+        options: [
+            { label: "Falta de visibilidade (ninguém me conhece)", next: "E_P3" },
+            { label: "Não consigo atender a demanda operacional atual", next: "E_P3" },
+            { label: "Minha equipe não tem as ferramentas certas", next: "E_P3" },
+            { label: "Não tenho dados claros para tomar decisões", next: "E_P3" },
+            { label: "Meu produto/serviço não está posicionado corretamente", next: "E_P3" }
+        ]
+    },
+    E_P3: {
+        id: 'E_P3',
+        title: "Você já investiu em tecnologia antes? Como foi a experiência?",
+        options: [
+            { label: "Sim, com ótimos resultados", next: "E_P4" },
+            { label: "Sim, mas não deu o retorno esperado", next: "E_P4" },
+            { label: "Sim, foi uma experiência ruim", next: "E_P4" },
+            { label: "Não, esta seria a primeira vez investindo pesado", next: "E_P4" }
+        ]
+    },
+    E_P4: {
+        id: 'E_P4',
+        title: "Como está seu faturamento mensal hoje? (Isso nos ajuda a entender a escala da solução)",
+        options: [
+            { label: "Até R$ 30k", next: "P6" },
+            { label: "R$ 30k a R$ 100k", next: "P6" },
+            { label: "R$ 100k a R$ 500k", next: "P6" },
+            { label: "Acima de R$ 500k", next: "P6" },
+            { label: "Prefiro não informar agora", next: "P6" }
+        ]
+    },
+
+    // Ramo F: Indeciso
+    F_P2: {
+        id: 'F_P2',
+        title: "Certo, vou te ajudar a descobrir. Me conta: qual é a situação que mais te frustra no seu negócio hoje?",
+        options: [
+            { label: "Perco muito tempo em tarefas manuais e repetitivas", next: "B_P3" },
+            { label: "Não consigo novos clientes e as vendas estão travadas", next: "C_P3" },
+            { label: "Minha equipe não trabalha de forma organizada", next: "D_P3" },
+            { label: "Não tenho visibilidade do que está acontecendo na empresa", next: "E_P3" },
+            { label: "Meu site ou sistema está muito atrasado em relação ao mercado", next: "A_P3" }
+        ]
+    },
+
+    // Qualificação Final Comum
+    P6: {
+        id: 'P6',
+        title: "Qual é a sua expectativa de prazo para ter isso funcionando?",
+        options: [
+            { label: "Preciso disso ontem — é urgente", next: "P7" },
+            { label: "No próximo mês (30 dias)", next: "P7" },
+            { label: "Em 2 a 3 meses", next: "P7" },
+            { label: "Não tenho prazo definido ainda, estou pesquisando", next: "P7" }
+        ]
+    },
+    P7: {
+        id: 'P7',
+        title: "Para planejar uma solução que realmente faça sentido para você, qual faixa de investimento está no seu horizonte?",
+        options: [
+            { label: "Ainda estou pesquisando valores", next: "P8" },
+            { label: "R$ 3.000 a R$ 8.000", next: "P8" },
+            { label: "R$ 8.000 a R$ 20.000", next: "P8" },
+            { label: "R$ 20.000 a R$ 50.000", next: "P8" },
+            { label: "Acima de R$ 50.000", next: "P8" }
+        ]
+    },
+    P8: {
+        id: 'P8',
+        title: "Por último: como você prefere que a Arkhos entre em contato para apresentar um diagnóstico personalizado?",
+        options: [
+            { label: "Reunião em vídeo via Google Meet (30 min)", next: "FINAL" },
+            { label: "Ligação telefônica", next: "FINAL" },
+            { label: "Mensagem no WhatsApp", next: "FINAL" },
+            { label: "E-mail detalhado primeiro", next: "FINAL" }
+        ]
     }
 };
 
-const formatDate = () => {
-    const now = new Date();
-    return now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-};
-
-const arr = (val) => (Array.isArray(val) ? val : val ? [val] : []);
-const join = (val) => arr(val).join(', ') || '—';
-
-// LogoWatermark removido a pedido do usuário (estava atrapalhando a leitura e contraste)
-
-// ─── Progress Bar ──────────────────────────────────────────────────────────────
-const ProgressBar = ({ current, total }) => {
-    const pct = Math.round((current / total) * 100);
-    return (
-        <div className="fixed top-0 left-0 right-0 z-50">
-            <div className="h-[3px] bg-white/5 w-full">
-                <motion.div
-                    className="h-full bg-[#00e676]"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                />
-            </div>
-        </div>
-    );
-};
-
-// ─── Option Card (single / multiple) ──────────────────────────────────────────
-const OptionCard = ({ label, selected, onClick, multi = false }) => (
+// ─── Componentes ──────────────────────────────────────────────────────────────
+const OptionCard = ({ label, selected, onClick }) => (
     <motion.button
         type="button"
         onClick={onClick}
         whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.97 }}
-        className={`w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 text-sm font-['DM_Sans'] leading-snug
+        whileTap={{ scale: 0.98 }}
+        className={`w-full text-left px-6 py-5 rounded-xl border transition-all duration-300 text-base md:text-lg font-['Sora'] leading-snug flex items-center gap-4
       ${selected
-                ? 'border-[#00e676] bg-[#00e676]/10 text-[#f0f7f3]'
-                : 'border-white/10 bg-white/[0.03] text-[#f0f7f3]/70 hover:border-white/20 hover:bg-white/[0.06]'
+                ? 'border-[#00C896] bg-[#00C896]/10 text-white shadow-[0_0_20px_rgba(0,200,150,0.15)]'
+                : 'border-white/10 bg-[#111] text-[#F1F1F1]/70 hover:border-[#00C896]/50 hover:bg-[#1a1a1a] hover:text-white'
             }`}
     >
-        <div className="flex items-center gap-3">
-            {multi && (
-                <span className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-all
-          ${selected ? 'border-[#00e676] bg-[#00e676]' : 'border-white/20'}`}>
-                    {selected && <Check size={12} className="text-black" />}
-                </span>
-            )}
-            {!multi && (
-                <span className={`flex-shrink-0 w-4 h-4 rounded-full border flex items-center justify-center transition-all
-          ${selected ? 'border-[#00e676]' : 'border-white/20'}`}>
-                    {selected && <span className="w-2 h-2 rounded-full bg-[#00e676] block" />}
-                </span>
-            )}
-            <span>{label}</span>
-        </div>
+        <span className={`flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center transition-all
+          ${selected ? 'border-[#00C896]' : 'border-white/20'}`}>
+            {selected && <span className="w-2.5 h-2.5 rounded-full bg-[#00C896] block" />}
+        </span>
+        <span>{label}</span>
     </motion.button>
 );
 
-// ─── Tag Button (múltipla seleção compacta) ───────────────────────────────────
-const Tag = ({ label, selected, onClick }) => (
-    <motion.button
-        type="button"
-        onClick={onClick}
-        whileTap={{ scale: 0.95 }}
-        className={`px-4 py-2 rounded-full text-xs font-['DM_Sans'] border transition-all duration-150
-      ${selected
-                ? 'border-[#00e676] bg-[#00e676]/15 text-[#00e676]'
-                : 'border-white/10 bg-white/[0.03] text-[#f0f7f3]/60 hover:border-white/20'
-            }`}
-    >
-        {label}
-    </motion.button>
-);
-
-// ─── Text Input ────────────────────────────────────────────────────────────────
 const StepInput = ({ placeholder, value, onChange, type = 'text', onEnter }) => {
     const ref = useRef();
     useEffect(() => { if (ref.current) ref.current.focus(); }, []);
@@ -120,807 +353,185 @@ const StepInput = ({ placeholder, value, onChange, type = 'text', onEnter }) => 
             onChange={e => onChange(e.target.value)}
             placeholder={placeholder}
             onKeyDown={e => { if (e.key === 'Enter' && onEnter) onEnter(); }}
-            className="w-full bg-transparent border-b-2 border-white/20 focus:border-[#00e676] outline-none text-[#f0f7f3] text-xl py-3 placeholder-white/20 transition-all duration-300 font-['DM_Sans']"
+            className="w-full bg-transparent border-b border-white/20 focus:border-[#00C896] outline-none text-white text-xl py-3 placeholder-white/20 transition-all duration-300 font-['Sora'] mb-4"
         />
     );
 };
 
-// ─── Textarea ─────────────────────────────────────────────────────────────────
-const StepTextarea = ({ placeholder, value, onChange }) => {
-    const ref = useRef();
-    useEffect(() => { if (ref.current) ref.current.focus(); }, []);
-    return (
-        <textarea
-            ref={ref}
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            placeholder={placeholder}
-            rows={4}
-            className="w-full bg-white/[0.03] border border-white/10 rounded-xl focus:border-[#00e676] outline-none text-[#f0f7f3] text-base p-4 placeholder-white/20 transition-all duration-300 resize-none font-['DM_Sans'] leading-relaxed"
-        />
-    );
-};
-
-// ─── Continue Button ───────────────────────────────────────────────────────────
-const ContinueBtn = ({ onClick, disabled = false, label = 'Continuar' }) => (
-    <motion.button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        whileHover={!disabled ? { scale: 1.03 } : {}}
-        whileTap={!disabled ? { scale: 0.97 } : {}}
-        className={`flex items-center gap-2 px-7 py-3 rounded-lg font-['DM_Sans'] font-semibold text-sm transition-all duration-200
-      ${disabled
-                ? 'bg-white/5 text-white/20 cursor-not-allowed'
-                : 'bg-[#00e676] text-black hover:bg-[#00ff84] cursor-pointer'
-            }`}
-    >
-        {label} <ArrowRight size={16} />
-    </motion.button>
-);
-
-// ─── Step wrapper animation ────────────────────────────────────────────────────
-const StepWrapper = ({ children }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -16 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="flex flex-col gap-6"
-    >
-        {children}
-    </motion.div>
-);
-
-// ─── Main Component ────────────────────────────────────────────────────────────
-const TOTAL_STEPS = 10;
-
-const SEGMENTS = [
-    'Saúde / Clínicas', 'Varejo / Loja', 'Serviços / Consultório',
-    'Indústria / Fábrica', 'Tecnologia / SaaS', 'Educação',
-    'Financeiro / Contabilidade', 'Imobiliário', 'Agronegócio',
-    'Alimentação / Restaurante', 'Logística / Transporte', 'Outro',
-];
-
-const TEAM_SIZES = ['Só eu', '2 a 10', '11 a 50', '51 a 200', '200+'];
-
-const BOTTLENECKS = [
-    '😤 Perdendo clientes para a concorrência — minha oferta não aparece ou não convence',
-    '🐢 Processos internos lentos e manuais — time faz tudo na mão, planilha ou WhatsApp',
-    '📉 Vendendo mas não retendo — clientes somem depois da primeira compra',
-    '🌐 Invisível no digital — poucos leads chegando, presença fraca online',
-    '🤯 Time sobrecarregado — muita gente fazendo pouca coisa por falta de sistema',
-    '💸 Alto custo para adquirir cliente — gasto muito para fechar pouco',
-];
-
-const CURRENT_TOOLS = [
-    'Planilhas Excel / Google Sheets', 'WhatsApp', 'Papel e anotações',
-    'Sistema antigo que não atende mais', 'Ferramentas desconectadas entre si',
-    'Não tem processo definido', 'Muita gente fazendo manualmente',
-];
-
-const URGENCY = [
-    '🔴 Crítico — está me custando dinheiro ou clientes todo mês',
-    '🟡 Relevante — me atrasa mas ainda funciona precariamente',
-    '🟢 Melhoria — quero evoluir antes que vire um problema',
-];
-
-const SOLUTIONS = [
-    '🎯 Landing Page — página de alta conversão para uma oferta, produto ou serviço',
-    '🌐 Site Institucional — presença digital completa da empresa',
-    '🤝 Sistema Front Office — vendas, CRM, atendimento, relacionamento com cliente',
-    '🖥️ Sistema Back Office — financeiro, RH, operações, controle interno',
-    '📱 Plataforma / App — produto digital, SaaS, marketplace',
-];
-
-const PROCESSES_FRONT = [
-    'Pipeline de vendas', 'CRM / gestão de clientes', 'Atendimento / suporte',
-    'Contratos e propostas', 'Agendamento', 'Pós-venda / fidelização',
-    'Integração com WhatsApp', 'Portal do cliente',
-];
-
-const PROCESSES_BACK = [
-    'Financeiro / fluxo de caixa', 'Emissão de notas fiscais', 'Gestão de estoque',
-    'RH / controle de ponto', 'Compras / fornecedores', 'Relatórios gerenciais',
-    'Aprovações internas', 'Integração com ERP',
-];
-
-const PROCESSES_WEB = [
-    'Formulário de captura', 'Botão WhatsApp', 'Checkout / pagamento',
-    'Blog / conteúdo', 'SEO', 'Área de membros', 'Analytics',
-];
-
-const VISUAL_ID = [
-    '✅ Sim, tenho tudo — logo, cores e fontes definidas',
-    '⚡ Tenho só o básico — só logo ou só as cores',
-    '❌ Não tenho nada — precisa ser criada do zero',
-];
-
-const VISUAL_TONES = [
-    'Sóbrio e profissional', 'Tecnológico', 'Minimalista', 'Luxo / Premium',
-    'Escuro e impactante', 'Claro e clean', 'Humano e próximo', 'Ousado e diferente',
-    'Corporativo', 'Colorido e vibrante',
-];
-
-const FATURAMENTO = [
-    'Ainda não faturo (ou menos de 10k/mês)',
-    '10k a 50k / mês',
-    '50k a 100k / mês',
-    '100k a 300k / mês',
-    'Mais de 300k / mês',
-];
-
-const PRAZO = [
-    '🔴 Urgente — preciso em até 2 semanas',
-    '🟡 Normal — 1 a 2 meses',
-    '🟢 Flexível — sem prazo fixo',
-];
-
-// Sub-steps within each stage (for counting progress granularly)
-// We'll treat each field within stage 1 as a "sub-step"
-// Internal sub-step tracking for stage 1 (4 fields) and stage 6 (conditional)
+// ─── Formulário Inteligente Principal ─────────────────────────────────────────
 const Orcamento = () => {
-    // stage 1 has 4 sub-fields; we track them individually
-    const [stage1Field, setStage1Field] = useState(0); // 0=nome,1=email,2=whatsapp,3=empresa
-    const [globalStep, setGlobalStep] = useState(1);
-    const [formData, setFormData] = useState({
-        // Stage 1
-        nome: '', email: '', whatsapp: '', empresa: '',
-        // Stage 2
-        segmento: '', teamSize: '', faturamento: '',
-        // Stage 3
-        gargalo: '',
-        // Stage 4
-        ferramentas: [],
-        // Stage 5
-        urgencia: '',
-        // Stage 6
-        solucoes: [], processosFront: [], processosBack: [], processosWeb: [],
-        // Stage 7
-        temIdentidade: '', tomsVisuais: [],
-        // Stage 8
-        prazo: '',
-        // Stage 9 (antigo 8)
-        observacoes: '',
-    });
+    // History para poder voltar passos
+    const [history, setHistory] = useState([]);
+    const [currentStepId, setCurrentStepId] = useState('DADOS_NOME');
+    const [answers, setAnswers] = useState({});
+
+    // Etapa final (Dados)
+    const [dadosForm, setDadosForm] = useState({ nome: '', email: '', whatsapp: '', empresa: '' });
     const [isComplete, setIsComplete] = useState(false);
-    const [partialSentUpTo, setPartialSentUpTo] = useState(0);
 
-    // Helper to update form field
-    const setField = useCallback((key, val) => {
-        setFormData(prev => ({ ...prev, [key]: val }));
-    }, []);
+    // Progresso simulado
+    const progress = Math.min(((history.length + 1) / 8) * 100, 100);
 
-    const toggleMulti = useCallback((key, val) => {
-        setFormData(prev => {
-            const arr = prev[key] || [];
-            const exists = arr.includes(val);
-            return { ...prev, [key]: exists ? arr.filter(v => v !== val) : [...arr, val] };
-        });
-    }, []);
+    const handleOptionSelect = (option) => {
+        // Salva a resposta e avança no fluxo
+        setAnswers(prev => ({ ...prev, [currentStepId]: option.label }));
 
-    // Build email body for partial
-    const buildPartialBody = useCallback((data, upToStep, upToField = null) => {
-        const name = data.nome || 'Lead Anônimo';
-        let body = `ARKHOS — BRIEFING PARCIAL\nData: ${formatDate()}\n`;
-        body += `─────────────────────────\n`;
-        if (upToStep >= 1) {
-            body += `ETAPA 1 — IDENTIFICAÇÃO\n`;
-            body += `Nome: ${data.nome || '—'}\nE-mail: ${data.email || '—'}\nWhatsApp: ${data.whatsapp || '—'}\nEmpresa: ${data.empresa || '—'}\n`;
-            body += `─────────────────────────\n`;
-        }
-        if (upToStep >= 2) {
-            body += `ETAPA 2 — SOBRE A EMPRESA\nSegmento: ${data.segmento || '—'}\nTamanho do time: ${data.teamSize || '—'}\nFaturamento: ${data.faturamento || '—'}\n`;
-            body += `─────────────────────────\n`;
-        }
-        if (upToStep >= 3) {
-            body += `ETAPA 3 — GARGALO PRINCIPAL\nOnde está perdendo mais: ${data.gargalo || '—'}\n`;
-            body += `─────────────────────────\n`;
-        }
-        if (upToStep >= 4) {
-            body += `ETAPA 4 — COMO RESOLVE HOJE\nFerramentas: ${join(data.ferramentas)}\n`;
-            body += `─────────────────────────\n`;
-        }
-        if (upToStep >= 5) {
-            body += `ETAPA 5 — URGÊNCIA\nImpacto: ${data.urgencia || '—'}\n`;
-            body += `─────────────────────────\n`;
-        }
-        body += `STATUS: Abandonou na etapa ${upToStep} de ${TOTAL_STEPS} ⚠️`;
-        return { name, body };
-    }, []);
-
-    // Send partial on step advance
-    const sendPartialIfNeeded = useCallback(async (data, step) => {
-        if (step <= partialSentUpTo) return;
-        setPartialSentUpTo(step);
-        const { name, body } = buildPartialBody(data, step);
-        const etapa = step;
-        const subject = `[ARKHOS] Lead Parcial — ${name} — etapa ${etapa} de ${TOTAL_STEPS}`;
-        await sendEmail(subject, body);
-    }, [partialSentUpTo, buildPartialBody]);
-
-    // Build final email
-    const buildFinalBody = (data) => {
-        const name = data.nome || 'Lead Anônimo';
-        const empresa = data.empresa || 'Empresa não informada';
-        let body = `ARKHOS — BRIEFING COMPLETO\nData: ${formatDate()}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 1 — IDENTIFICAÇÃO\nNome: ${data.nome}\nE-mail: ${data.email}\nWhatsApp: ${data.whatsapp}\nEmpresa: ${data.empresa || '—'}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 2 — SOBRE A EMPRESA\nSegmento: ${data.segmento}\nTamanho do time: ${data.teamSize}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 3 — GARGALO PRINCIPAL\nOnde está perdendo mais: ${data.gargalo}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 4 — COMO RESOLVE HOJE\nFerramentas atuais: ${join(data.ferramentas)}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 5 — IMPACTO\nNível de urgência: ${data.urgencia}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 6 — SOLUÇÃO DESEJADA\nO que precisa: ${join(data.solucoes)}\n`;
-        if (data.processosFront.length) body += `Processos Front Office: ${join(data.processosFront)}\n`;
-        if (data.processosBack.length) body += `Processos Back Office: ${join(data.processosBack)}\n`;
-        if (data.processosWeb.length) body += `Recursos web/landing: ${join(data.processosWeb)}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 7 — IDENTIDADE VISUAL\nTem identidade visual: ${data.temIdentidade}\nTom visual desejado: ${join(data.tomsVisuais)}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 8 — PRAZO IDEAL\nUrgência do projeto: ${data.prazo}\n`;
-        body += `─────────────────────────────\n`;
-        body += `ETAPA 9 — CONTEXTO FINAL\nObservações: ${data.observacoes || 'Prefere explicar na call'}\n`;
-        body += `─────────────────────────────\n`;
-        body += `STATUS: Formulário completo ✅`;
-        return { name, empresa, body };
+        setTimeout(() => {
+            if (option.next === 'FINAL') {
+                console.log('Briefing Finalizado:', { ...answers, [currentStepId]: option.label, ...dadosForm });
+                setIsComplete(true);
+            } else {
+                setHistory(prev => [...prev, currentStepId]);
+                setCurrentStepId(option.next);
+            }
+        }, 300); // pequeno delay para mostrar a seleção visualmente
     };
 
-    // Compute needs for conditional stage 6
-    const needsFront = formData.solucoes.includes('🤝 Sistema Front Office — vendas, CRM, atendimento, relacionamento com cliente');
-    const needsBack = formData.solucoes.includes('🖥️ Sistema Back Office — financeiro, RH, operações, controle interno');
-    const needsWeb = formData.solucoes.some(s => s.startsWith('🎯') || s.startsWith('🌐'));
-
-    // Compute sub-steps in stage 1
-    // Stage 1 internal sub-steps: nome(0), email(1), whatsapp(2), empresa(3)
-    // progress: we treat stage 1 as steps 1-4 of a total that includes sub-steps
-    // Total "internal" steps: 4 (stage1) + 2 (stage2) + 1(3) + 1(4) + 1(5) + 1+cond(6) + 2(7) + 1(8)
-    // For progress bar: use globalStep from 1 to TOTAL_STEPS
-    const advance = () => {
-        if (globalStep < TOTAL_STEPS) {
-            const next = globalStep + 1;
-            sendPartialIfNeeded(formData, globalStep);
-            setGlobalStep(next);
-        } else {
-            handleSubmit();
+    const handleBack = () => {
+        if (history.length > 0) {
+            const newHistory = [...history];
+            const previousStep = newHistory.pop();
+            setHistory(newHistory);
+            setCurrentStepId(previousStep);
         }
     };
 
-    const goBack = () => {
-        if (globalStep > 1) setGlobalStep(g => g - 1);
+    const isValidInput = (q) => {
+        const val = dadosForm[q.key] || '';
+        if (q.key === 'nome') return val.length > 2;
+        if (q.key === 'email') return val.includes('@') && val.length > 5;
+        if (q.key === 'whatsapp') return val.length > 8;
+        if (q.key === 'empresa') return true; // Opcional
+        return true;
     };
 
-    const handleSubmit = async () => {
-        const { name, empresa, body } = buildFinalBody(formData);
-        const subject = `[ARKHOS] Novo Briefing — ${name} — ${empresa}`;
-        await sendEmail(subject, body);
-        setIsComplete(true);
+    const handleInputNext = (q) => {
+        if (!isValidInput(q)) return;
+        setHistory(prev => [...prev, currentStepId]);
+        setCurrentStepId(q.next);
     };
 
-    // Stage 1 is special: 4 sub-fields one-at-a-time
-    // We handle it as a sub-step within globalStep===1
-    const s1Labels = [
-        { key: 'nome', label: 'Como você se chama?', placeholder: 'Ex: João Silva', type: 'text', required: true },
-        { key: 'email', label: 'Qual o seu e-mail?', placeholder: 'Ex: joao@suaempresa.com.br', type: 'email', required: true },
-        { key: 'whatsapp', label: 'Qual o seu WhatsApp?', placeholder: 'Ex: (11) 99999-9999', type: 'tel', required: true },
-        { key: 'empresa', label: 'Nome da empresa ou projeto?', placeholder: 'Ex: Distribuidora Silva, Startup X...', type: 'text', required: false },
-    ];
-
-    const advanceStage1 = () => {
-        const current = s1Labels[stage1Field];
-        if (current.required && !formData[current.key]) return;
-        if (stage1Field < 3) {
-            setStage1Field(f => f + 1);
-        } else {
-            sendPartialIfNeeded(formData, 1);
-            setGlobalStep(2);
-            setStage1Field(0);
-        }
-    };
-
-    const backStage1 = () => {
-        if (stage1Field > 0) setStage1Field(f => f - 1);
-    };
-
-    // Stage 6 sub-step logic: after selecting solutions, show conditional process questions
-    const [stage6Sub, setStage6Sub] = useState('main'); // 'main' | 'front' | 'back' | 'web' | 'done'
-    const advanceStage6 = () => {
-        if (stage6Sub === 'main') {
-            if (formData.solucoes.length === 0) return;
-            if (needsFront) { setStage6Sub('front'); return; }
-            if (needsBack) { setStage6Sub('back'); return; }
-            if (needsWeb) { setStage6Sub('web'); return; }
-            sendPartialIfNeeded(formData, 6);
-            setGlobalStep(7);
-            setStage6Sub('main');
-        } else if (stage6Sub === 'front') {
-            if (needsBack) { setStage6Sub('back'); return; }
-            if (needsWeb) { setStage6Sub('web'); return; }
-            sendPartialIfNeeded(formData, 6);
-            setGlobalStep(7);
-            setStage6Sub('main');
-        } else if (stage6Sub === 'back') {
-            if (needsWeb) { setStage6Sub('web'); return; }
-            sendPartialIfNeeded(formData, 6);
-            setGlobalStep(7);
-            setStage6Sub('main');
-        } else if (stage6Sub === 'web') {
-            sendPartialIfNeeded(formData, 6);
-            setGlobalStep(7);
-            setStage6Sub('main');
-        }
-    };
-    const backStage6 = () => {
-        if (stage6Sub !== 'main') {
-            // go back to main selection of stage6
-            setStage6Sub('main');
-        } else {
-            setGlobalStep(5);
-        }
-    };
-
-    // Stage 2 has 3 sub-fields
-    const [stage2Sub, setStage2Sub] = useState(0); // 0=segmento, 1=teamSize, 2=faturamento
-    const advanceStage2 = () => {
-        if (stage2Sub === 0) {
-            if (!formData.segmento) return;
-            setStage2Sub(1);
-        } else if (stage2Sub === 1) {
-            if (!formData.teamSize) return;
-            setStage2Sub(2);
-        } else {
-            if (!formData.faturamento) return;
-            sendPartialIfNeeded(formData, 2);
-            setGlobalStep(3);
-            setStage2Sub(0);
-        }
-    };
-    const backStage2 = () => {
-        if (stage2Sub > 0) { setStage2Sub(s => s - 1); }
-        else { setGlobalStep(1); setStage1Field(3); }
-    };
-
-    // Stage 7 has 2 sub-fields
-    const [stage7Sub, setStage7Sub] = useState(0); // 0=identidade, 1=tom
-    const advanceStage7 = () => {
-        if (stage7Sub === 0) {
-            if (!formData.temIdentidade) return;
-            setStage7Sub(1);
-        } else {
-            sendPartialIfNeeded(formData, 7);
-            setGlobalStep(8);
-            setStage7Sub(0);
-        }
-    };
-    const backStage7 = () => {
-        if (stage7Sub === 1) { setStage7Sub(0); }
-        else { setGlobalStep(6); }
-    };
-
-    // ── FINAL SCREEN ─────────────────────────────────────────────────────────────
+    // ── TELA DE CONFIRMAÇÃO (THANK YOU PAGE) ──────────────────────────────────
     if (isComplete) {
-        const nome = formData.nome || 'você';
-        const empresa = formData.empresa || 'sua empresa';
-        const solStr = join(formData.solucoes.map(s => s.split('—')[0].trim()));
-        const procStr = [
-            ...formData.processosFront,
-            ...formData.processosBack,
-            ...formData.processosWeb
-        ].join(', ') || 'processos selecionados';
-        const waMsgRaw = `Olá, acabei de preencher o briefing da Arkhos. Meu nome é ${formData.nome}, da empresa ${empresa}. Meu principal gargalo é ${formData.gargalo}. Preciso de ${solStr}. Gostaria de conversar.`;
-        const waMsg = encodeURIComponent(waMsgRaw);
-
         return (
-            <div className="min-h-screen w-full flex items-center justify-center px-4 py-20 relative overflow-hidden font-['DM_Sans']">
+            <div className="min-h-screen w-full flex items-center justify-center px-4 py-20 relative bg-[#040404]">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,200,150,0.05)_0%,transparent_70%)] pointer-events-none" />
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="relative z-10 max-w-xl w-full text-center"
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="relative z-10 max-w-xl w-full text-center bg-[#111] p-10 rounded-2xl border border-white/5 shadow-2xl"
                 >
-                    <div className="w-16 h-16 bg-[#00e676]/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-[#00e676]/30">
-                        <Check size={32} className="text-[#00e676]" />
+                    <div className="w-20 h-20 bg-[#00C896]/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-[#00C896]/30">
+                        <Check size={40} className="text-[#00C896]" />
                     </div>
-                    <h2 className="text-3xl md:text-4xl font-['Syne'] font-bold text-[#f0f7f3] mb-6">
-                        Briefing recebido.
+                    <p className="text-xs font-mono uppercase tracking-[0.3em] text-[#00C896] mb-4">Diagnóstico recebido</p>
+                    <h2 className="text-3xl md:text-4xl font-['Sora'] font-bold text-white mb-6">
+                        Você vai adorar o que estamos preparando.
                     </h2>
-                    <p className="text-[#f0f7f3]/70 text-base leading-relaxed mb-10">
-                        Com base no que você compartilhou, identificamos que a <strong className="text-[#f0f7f3]">{empresa}</strong> está com gargalo em{' '}
-                        <span className="text-[#00e676]">{formData.gargalo?.split('—')[0]?.trim()}</span>, resolve hoje com{' '}
-                        <span className="text-[#f0f7f3]">{join(formData.ferramentas)}</span>, e precisa de{' '}
-                        <span className="text-[#f0f7f3]">{solStr}</span> com foco em{' '}
-                        <span className="text-[#f0f7f3]">{procStr}</span>. O impacto atual é{' '}
-                        <span className="text-[#f0f7f3]">{formData.urgencia?.split('—')[0]?.trim()}</span>.{' '}
-                        Nossa equipe vai analisar e entrar em contato em até <strong className="text-[#00e676]">48 horas úteis</strong>.
+                    <p className="text-[#F1F1F1]/70 text-base leading-relaxed mb-10">
+                        Um especialista da Arkhos já recebeu suas informações e está analisando o contexto da <strong className="text-white">{dadosForm.empresa || 'sua empresa'}</strong>. Entraremos em contato em até <strong className="text-[#00C896]">4 horas úteis</strong>.
                     </p>
-                    <div className="flex flex-col gap-4">
+
+                    <div className="pt-8 border-t border-white/10">
+                        <p className="text-sm text-white/50 mb-6">Se preferir não esperar, agende seu horário direto na agenda do especialista:</p>
                         <motion.button
-                            onClick={() => window.location.href = '/'}
                             whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.97 }}
-                            className="w-full py-4 bg-[#00e676] text-black font-semibold rounded-xl hover:bg-[#00ff84] transition-all"
+                            className="w-full py-4 bg-[#00C896] text-black font-bold rounded-xl hover:bg-[#00e6aa] transition-all flex items-center justify-center gap-2"
                         >
-                            Confirmar e aguardar contato
+                            <Calendar size={18} /> Agendar no Calendly
                         </motion.button>
-                        <motion.a
-                            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${waMsg}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            className="w-full py-4 border border-white/15 text-[#f0f7f3] font-semibold rounded-xl hover:border-[#00e676]/40 hover:text-[#00e676] transition-all flex items-center justify-center gap-2"
-                        >
-                            <MessageCircle size={18} /> Prefiro já falar com a equipe
-                        </motion.a>
                     </div>
                 </motion.div>
             </div>
         );
     }
 
-    // ── RENDER EACH STEP ──────────────────────────────────────────────────────────
-    const renderStep = () => {
-        // ── STEP 1 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 1) {
-            const field = s1Labels[stage1Field];
-            const isOptional = !field.required;
-            const canContinue = !field.required || !!formData[field.key];
-            return (
-                <StepWrapper key={`s1-${stage1Field}`}>
-                    {stage1Field === 0 && (
-                        <p className="text-[#f0f7f3]/40 text-sm font-['DM_Sans'] uppercase tracking-widest">
-                            Etapa 1 de 8 — Identificação
-                        </p>
-                    )}
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3] leading-tight">
-                        {field.label}
-                        {isOptional && <span className="text-xs text-white/30 ml-3 font-['DM_Sans'] font-normal normal-case tracking-normal">(opcional)</span>}
-                    </h2>
-                    <StepInput
-                        placeholder={field.placeholder}
-                        value={formData[field.key]}
-                        onChange={v => setField(field.key, v)}
-                        type={field.type}
-                        onEnter={canContinue ? advanceStage1 : undefined}
-                    />
-                    <div className="flex items-center gap-4 pt-2">
-                        <ContinueBtn onClick={advanceStage1} disabled={!canContinue} />
-                        {stage1Field > 0 && (
-                            <button type="button" onClick={backStage1} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                                <ChevronLeft size={14} /> Voltar
-                            </button>
-                        )}
-                    </div>
-                    <p className="text-xs text-white/20 font-['DM_Sans']">Pressione Enter para continuar</p>
-                </StepWrapper>
-            );
-        }
+    // (Removido tela DADOS consolidada)
 
-        // ── STEP 2 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 2) {
-            if (stage2Sub === 0) {
-                return (
-                    <StepWrapper key="s2-segmento">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 2 de 10 — Sobre a Empresa</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Qual é o segmento da sua empresa?</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {SEGMENTS.map(s => (
-                                <OptionCard key={s} label={s} selected={formData.segmento === s}
-                                    onClick={() => { setField('segmento', s); setTimeout(advanceStage2, 350); }} />
-                            ))}
-                        </div>
-                        <button type="button" onClick={backStage2} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                            <ChevronLeft size={14} /> Voltar
-                        </button>
-                    </StepWrapper>
-                );
-            }
-            if (stage2Sub === 1) {
-                return (
-                    <StepWrapper key="s2-team">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 2 de 10 — Sobre a Empresa</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Quantas pessoas trabalham na empresa?</h2>
-                        <div className="flex flex-col gap-2">
-                            {TEAM_SIZES.map(s => (
-                                <OptionCard key={s} label={s} selected={formData.teamSize === s}
-                                    onClick={() => { setField('teamSize', s); setTimeout(advanceStage2, 350); }} />
-                            ))}
-                        </div>
-                        <button type="button" onClick={backStage2} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                            <ChevronLeft size={14} /> Voltar
-                        </button>
-                    </StepWrapper>
-                );
-            }
-            return (
-                <StepWrapper key="s2-faturamento">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 2 de 10 — Sobre a Empresa</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Qual o faturamento médio mensal?</h2>
-                    <div className="flex flex-col gap-2">
-                        {FATURAMENTO.map(s => (
-                            <OptionCard key={s} label={s} selected={formData.faturamento === s}
-                                onClick={() => { setField('faturamento', s); setTimeout(advanceStage2, 350); }} />
-                        ))}
-                    </div>
-                    <button type="button" onClick={backStage2} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                        <ChevronLeft size={14} /> Voltar
-                    </button>
-                </StepWrapper>
-            );
-        }
+    // ── TELA DE PERGUNTAS (DECISION TREE) ─────────────────────────────────────
+    const question = QUESTIONS[currentStepId];
 
-        // ── STEP 3 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 3) {
-            return (
-                <StepWrapper key="s3">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 3 de 9 — Diagnóstico</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#00e676]">Onde a empresa está perdendo mais hoje?</h2>
-                    <div className="flex flex-col gap-2">
-                        {BOTTLENECKS.map(b => (
-                            <OptionCard key={b} label={b} selected={formData.gargalo === b}
-                                onClick={() => { setField('gargalo', b); setTimeout(() => { sendPartialIfNeeded(formData, 3); setGlobalStep(4); }, 350); }} />
-                        ))}
-                    </div>
-                    <button type="button" onClick={() => { setGlobalStep(2); setStage2Sub(1); }} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                        <ChevronLeft size={14} /> Voltar
-                    </button>
-                </StepWrapper>
-            );
-        }
-
-        // ── STEP 4 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 4) {
-            return (
-                <StepWrapper key="s4">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 4 de 9 — Como resolve hoje</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Como você lida com esse problema atualmente?</h2>
-                    <p className="text-white/40 text-sm">Selecione todas que se aplicam</p>
-                    <div className="flex flex-wrap gap-2">
-                        {CURRENT_TOOLS.map(t => (
-                            <Tag key={t} label={t} selected={formData.ferramentas.includes(t)}
-                                onClick={() => toggleMulti('ferramentas', t)} />
-                        ))}
-                    </div>
-                    <div className="flex items-center gap-4 pt-2">
-                        <ContinueBtn onClick={() => { sendPartialIfNeeded(formData, 4); setGlobalStep(5); }} disabled={formData.ferramentas.length === 0} />
-                        <button type="button" onClick={() => setGlobalStep(3)} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                            <ChevronLeft size={14} /> Voltar
-                        </button>
-                    </div>
-                </StepWrapper>
-            );
-        }
-
-        // ── STEP 5 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 5) {
-            return (
-                <StepWrapper key="s5">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 5 de 9 — Impacto e Urgência</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Qual é o impacto disso no negócio hoje?</h2>
-                    <div className="flex flex-col gap-2">
-                        {URGENCY.map(u => (
-                            <OptionCard key={u} label={u} selected={formData.urgencia === u}
-                                onClick={() => { setField('urgencia', u); setTimeout(() => { sendPartialIfNeeded(formData, 5); setGlobalStep(6); setStage6Sub('main'); }, 350); }} />
-                        ))}
-                    </div>
-                    <button type="button" onClick={() => setGlobalStep(4)} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                        <ChevronLeft size={14} /> Voltar
-                    </button>
-                </StepWrapper>
-            );
-        }
-
-        // ── STEP 6 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 6) {
-            if (stage6Sub === 'main') {
-                return (
-                    <StepWrapper key="s6-main">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 6 de 9 — Solução Desejada</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">O que você precisa desenvolver?</h2>
-                        <p className="text-white/40 text-sm">Selecione uma ou mais opções</p>
-                        <div className="flex flex-col gap-2">
-                            {SOLUTIONS.map(s => (
-                                <OptionCard key={s} label={s} selected={formData.solucoes.includes(s)} multi
-                                    onClick={() => toggleMulti('solucoes', s)} />
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-4 pt-2">
-                            <ContinueBtn onClick={advanceStage6} disabled={formData.solucoes.length === 0} />
-                            <button type="button" onClick={backStage6} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                                <ChevronLeft size={14} /> Voltar
-                            </button>
-                        </div>
-                    </StepWrapper>
-                );
-            }
-            if (stage6Sub === 'front') {
-                return (
-                    <StepWrapper key="s6-front">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 6 de 9 — Front Office</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Quais processos precisam ser cobertos?</h2>
-                        <p className="text-white/40 text-sm">Front Office — selecione todos que se aplicam</p>
-                        <div className="flex flex-wrap gap-2">
-                            {PROCESSES_FRONT.map(p => (
-                                <Tag key={p} label={p} selected={formData.processosFront.includes(p)}
-                                    onClick={() => toggleMulti('processosFront', p)} />
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-4 pt-2">
-                            <ContinueBtn onClick={advanceStage6} />
-                            <button type="button" onClick={() => setStage6Sub('main')} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                                <ChevronLeft size={14} /> Voltar
-                            </button>
-                        </div>
-                    </StepWrapper>
-                );
-            }
-            if (stage6Sub === 'back') {
-                return (
-                    <StepWrapper key="s6-back">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 6 de 9 — Back Office</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Quais processos precisam ser cobertos?</h2>
-                        <p className="text-white/40 text-sm">Back Office — selecione todos que se aplicam</p>
-                        <div className="flex flex-wrap gap-2">
-                            {PROCESSES_BACK.map(p => (
-                                <Tag key={p} label={p} selected={formData.processosBack.includes(p)}
-                                    onClick={() => toggleMulti('processosBack', p)} />
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-4 pt-2">
-                            <ContinueBtn onClick={advanceStage6} />
-                            <button type="button" onClick={() => needsFront ? setStage6Sub('front') : setStage6Sub('main')} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                                <ChevronLeft size={14} /> Voltar
-                            </button>
-                        </div>
-                    </StepWrapper>
-                );
-            }
-            if (stage6Sub === 'web') {
-                return (
-                    <StepWrapper key="s6-web">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 6 de 9 — Landing Page / Site</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">O que precisa ter?</h2>
-                        <p className="text-white/40 text-sm">Selecione todos que se aplicam</p>
-                        <div className="flex flex-wrap gap-2">
-                            {PROCESSES_WEB.map(p => (
-                                <Tag key={p} label={p} selected={formData.processosWeb.includes(p)}
-                                    onClick={() => toggleMulti('processosWeb', p)} />
-                            ))}
-                        </div>
-                        <div className="flex items-center gap-4 pt-2">
-                            <ContinueBtn onClick={advanceStage6} />
-                            <button type="button" onClick={() => needsBack ? setStage6Sub('back') : needsFront ? setStage6Sub('front') : setStage6Sub('main')} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                                <ChevronLeft size={14} /> Voltar
-                            </button>
-                        </div>
-                    </StepWrapper>
-                );
-            }
-        }
-
-        // ── STEP 7 ─────────────────────────────────────────────────────────────────
-        if (globalStep === 7) {
-            if (stage7Sub === 0) {
-                return (
-                    <StepWrapper key="s7-identidade">
-                        <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 7 de 9 — Identidade Visual</p>
-                        <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Já tem identidade visual?</h2>
-                        <div className="flex flex-col gap-2">
-                            {VISUAL_ID.map(v => (
-                                <OptionCard key={v} label={v} selected={formData.temIdentidade === v}
-                                    onClick={() => { setField('temIdentidade', v); setTimeout(advanceStage7, 350); }} />
-                            ))}
-                        </div>
-                        <button type="button" onClick={backStage7} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                            <ChevronLeft size={14} /> Voltar
-                        </button>
-                    </StepWrapper>
-                );
-            }
-            return (
-                <StepWrapper key="s7-tom">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 7 de 9 — Tom Visual</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Como o projeto precisa parecer?</h2>
-                    <p className="text-white/40 text-sm">Selecione todos que combinam com sua visão</p>
-                    <div className="flex flex-wrap gap-2">
-                        {VISUAL_TONES.map(t => (
-                            <Tag key={t} label={t} selected={formData.tomsVisuais.includes(t)}
-                                onClick={() => toggleMulti('tomsVisuais', t)} />
-                        ))}
-                    </div>
-                    <div className="flex items-center gap-4 pt-2">
-                        <ContinueBtn onClick={advanceStage7} />
-                        <button type="button" onClick={() => setStage7Sub(0)} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                            <ChevronLeft size={14} /> Voltar
-                        </button>
-                    </div>
-                </StepWrapper>
-            );
-        }
-
-        // ── STEP 8 (NOVO) ────────────────────────────────────────────────────────
-        if (globalStep === 8) {
-            return (
-                <StepWrapper key="s8">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 8 de 9 — Prazo Ideal</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">Qual é o prazo ideal para esse projeto?</h2>
-                    <div className="flex flex-col gap-2">
-                        {PRAZO.map(p => (
-                            <OptionCard key={p} label={p} selected={formData.prazo === p}
-                                onClick={() => { setField('prazo', p); setTimeout(() => { sendPartialIfNeeded(formData, 8); setGlobalStep(9); }, 350); }} />
-                        ))}
-                    </div>
-                    <button type="button" onClick={() => setGlobalStep(7)} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                        <ChevronLeft size={14} /> Voltar
-                    </button>
-                </StepWrapper>
-            );
-        }
-        // ── STEP 9 (NOVO CONTEXTO) ───────────────────────────────────────────────
-        if (globalStep === 9) {
-            return (
-                <StepWrapper key="s9">
-                    <p className="text-[#f0f7f3]/40 text-sm uppercase tracking-widest">Etapa 9 de 9 — Contexto Final</p>
-                    <h2 className="text-2xl md:text-3xl font-['Syne'] font-bold text-[#f0f7f3]">
-                        Tem algo que a Arkhos precisa saber antes de montar a solução?
-                    </h2>
-                    <StepTextarea
-                        placeholder="Ex: já tentamos isso antes e não funcionou porque o sistema era muito complicado pro time usar... / precisamos integrar com o Totvs que já usamos..."
-                        value={formData.observacoes}
-                        onChange={v => setField('observacoes', v)}
-                    />
-                    <div className="flex flex-col gap-3 pt-2">
-                        <div className="flex items-center gap-4">
-                            <ContinueBtn onClick={handleSubmit} label="Enviar briefing" />
-                            <button type="button" onClick={() => setGlobalStep(8)} className="text-white/30 hover:text-white/60 text-sm flex items-center gap-1 transition-colors">
-                                <ChevronLeft size={14} /> Voltar
-                            </button>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={handleSubmit}
-                            className="text-white/30 hover:text-[#00e676] text-sm transition-colors underline underline-offset-4 text-left w-fit"
-                        >
-                            Prefiro explicar na call →
-                        </button>
-                    </div>
-                </StepWrapper>
-            );
-        }
-
-        return null;
-    };
+    if (!question) return null; // Fallback
 
     return (
-        <div
-            className="min-h-screen w-full flex flex-col font-['DM_Sans'] pt-4 md:pt-10"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}
-        >
-            {/* Google Fonts */}
-            <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-      `}</style>
+        <div className="min-h-screen w-full flex flex-col pt-24 pb-12 px-6 bg-[#040404]">
+            {/* Barra de Progresso */}
+            <div className="fixed top-[80px] left-0 right-0 z-40 h-1 bg-white/5">
+                <motion.div
+                    className="h-full bg-[#00C896]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.5 }}
+                />
+            </div>
 
-            <ProgressBar current={globalStep} total={TOTAL_STEPS} />
+            <div className="flex-1 max-w-3xl mx-auto w-full flex flex-col justify-center">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentStepId}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                        {question.subtitle && (
+                            <p className="text-[#00C896] text-sm font-mono uppercase tracking-widest mb-4">
+                                {question.subtitle}
+                            </p>
+                        )}
+                        <h2 className="text-3xl md:text-5xl font-['Sora'] font-bold text-white mb-12 leading-tight">
+                            {question.title}
+                        </h2>
 
-            <div className="flex-1 flex items-center justify-center px-4 py-8 relative overflow-hidden z-10">
-                <div className="relative z-10 w-full max-w-2xl">
-                    {/* Logo topo do form (Esquerda) integrada */}
-                    <div className="flex items-center justify-start mb-12 w-full pl-0">
-                        <img
-                            src="/image-removebg-preview.png"
-                            alt="ARKHOS"
-                            className="h-8 md:h-10 w-auto object-contain opacity-70 transition-transform hover:scale-105 duration-300"
-                        />
-                    </div>
+                        {question.options ? (
+                            <div className="flex flex-col gap-3">
+                                {question.options.map((opt, idx) => (
+                                    <OptionCard
+                                        key={idx}
+                                        label={opt.label}
+                                        selected={answers[currentStepId] === opt.label}
+                                        onClick={() => handleOptionSelect(opt)}
+                                    />
+                                ))}
+                            </div>
+                        ) : question.inputType ? (
+                            <div className="flex flex-col gap-6">
+                                <StepInput
+                                    type={question.inputType}
+                                    placeholder={question.placeholder}
+                                    value={dadosForm[question.key] || ''}
+                                    onChange={v => setDadosForm({ ...dadosForm, [question.key]: v })}
+                                    onEnter={() => handleInputNext(question)}
+                                />
+                                <motion.button
+                                    onClick={() => handleInputNext(question)}
+                                    disabled={!isValidInput(question)}
+                                    className={`py-4 font-bold rounded-xl text-base transition-all flex justify-center items-center gap-2 ${isValidInput(question) ? 'bg-[#00C896] text-black hover:bg-[#00e6aa]' : 'bg-white/5 text-white/20 cursor-not-allowed'}`}
+                                >
+                                    Continuar <ArrowRight size={18} />
+                                </motion.button>
+                            </div>
+                        ) : null}
 
-                    <AnimatePresence mode="wait">
-                        {renderStep()}
-                    </AnimatePresence>
-                </div>
+                        {history.length > 0 && (
+                            <div className="mt-8 pt-6 border-t border-white/5">
+                                <button
+                                    onClick={handleBack}
+                                    className="flex items-center gap-2 text-white/30 hover:text-white/80 transition-colors text-sm font-['Sora']"
+                                >
+                                    <ChevronLeft size={16} /> Voltar para pergunta anterior
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+
+            <div className="max-w-3xl mx-auto w-full text-center mt-12">
+                <p className="text-white/20 text-xs font-mono">
+                    Este diagnóstico leva menos de 2 minutos. Suas respostas são sigilosas.
+                </p>
             </div>
         </div>
     );

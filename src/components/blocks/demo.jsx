@@ -5,37 +5,37 @@ import { StackingCards } from "../ui/StackingCards"
 const PROCESS_PHASES = [
     {
         id: "process-1",
-        title: "Pesquisa e Análise",
+        title: "Mapeamento de Impacto",
         description:
-            "Mergulhamos no contexto competitivo da sua marca. Analisamos tendências de mercado, comportamentos do público e dados estratégicos. Esta abordagem fundamental garante que o projeto tenha não só visual impecável, mas precisão cirúrgica no mercado.",
+            "30 minutos de auditoria onde identificamos exatamente onde a IA gera retorno real, não teórico. Você sai do diagnóstico com um mapa claro de oportunidades — independente de contratar ou não.",
         image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1920&auto=format&fit=crop"
     },
     {
         id: "process-2",
-        title: "Arquitetura e Prototipagem",
+        title: "Escopo Fixo",
         description:
-            "Avançamos para a prototipagem, onde criamos a estrutura neural das suas interfaces. Estes primeiros modelos em baixa e alta fidelidade nos permitem alinhar completamente as expectativas operacionais antes de avançarmos para o código visual.",
+            "Entregamos um escopo claro com cronograma e preço fechado. Sem cobrança por hora, sem surpresas no meio do projeto. Você sabe exatamente o que está contratando antes de assinar qualquer coisa.",
         image: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?q=80&w=1920&auto=format&fit=crop"
     },
     {
         id: "process-3",
-        title: "Design de Alto Padrão",
+        title: "Construção em Produção",
         description:
-            "A fase onde a estética de classe mundial encontra a inteligência. Nossos designers esculpem toda a interface da sua marca com perfeição milimétrica, unindo a identidade Arkhos com sua essência corporativa, projetando autoridade máxima.",
+            "Nosso time constriói, testa e implementa seus sistemas com atualizações semanais. Você recebe um produto funcionando em produção — não um deck cheio de promessas.",
         image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1920&auto=format&fit=crop"
     },
     {
         id: "process-4",
         title: "Engenharia e Testes",
         description:
-            "Transformamos o design e as estratégias aprovadas num ambiente funcional imparável. Nossa engenharia foca em performance, responsividade global e testes rigorosos para garantir que cada pixel opere de forma inteligente e veloz.",
+            "Cada sistema passa por testes rigorosos de performance, responsividade e carga antes de ir para produção. Nossa engenharia garante que cada componente opere de forma inteligente, veloz e estável.",
         image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1920&auto=format&fit=crop"
     },
     {
         id: "process-5",
-        title: "Escala e Dominância",
+        title: "Operação Inteligente",
         description:
-            "A nossa entrega não acaba no Lançamento. Operamos como seus parceiros tecnológicos, fornecendo suporte avançado, análise de métricas pós-entrega e garantia de que todo o seu ecossistema digital dominará por muito tempo.",
+            "Retainer opcional para monitoramento, otimização e iteração contínua. A maioria dos clientes vê retornos compostos ao longo do tempo — é quando o sistema começa a pagar sozinho.",
         image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1920&auto=format&fit=crop"
     },
 ]
@@ -95,15 +95,14 @@ const Process = () => {
     return (
         <div className="relative border-t border-white/5 bg-black">
             <div className="container mx-auto px-6 xl:px-12 pt-20 pb-10 text-center max-w-4xl">
-                <h5 className="text-xs uppercase tracking-widest text-[#00C896] mb-4">nossa metodologia</h5>
+                <h5 className="text-xs uppercase tracking-widest text-[#00C896] mb-4">O Framework Arkhos</h5>
                 <h2 className="mb-6 text-4xl md:text-5xl font-['Sora'] font-bold tracking-tight text-[#F1F1F1]">
-                    Desenhando sua próxima{" "}
-                    <span className="text-[#00C896]">jornada tecnológica</span>.
+                    Da auditoria ao sistema{" "}
+                    <span className="text-[#00C896]">em produção.</span>
                 </h2>
                 <p className="max-w-prose mx-auto text-lg text-[#F1F1F1]/70 leading-relaxed">
-                    Nossa jornada começa com uma imersão completa em sua visão de negócios.
-                    É na fase de descoberta (Discovery) que desenhamos as reais fundações
-                    estratégicas do projeto com você, de igual para igual. Role para descobrir.
+                    Nossa jornada começa com um Mapeamento de Impacto — onde identificamos
+                    exatamente onde sua empresa está deixando dinheiro na mesa. Role para descobrir cada etapa.
                 </p>
             </div>
             <StackingCards cards={PROCESS_PHASES} />
